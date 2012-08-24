@@ -366,23 +366,26 @@ static char tabBarImageViewKey;
     if (![navigationController.ng_originalNavigationControllerDelegate isKindOfClass:[self class]]) {
         [navigationController.ng_originalNavigationControllerDelegate navigationController:navigationController willShowViewController:viewController animated:animated];
     }
-    NSUInteger indexOfViewControllerToPush = [navigationController.viewControllers indexOfObject:viewController];
-    NSInteger indexOfViewControllerThatGetsHidden = indexOfViewControllerToPush - 1;
-    if (indexOfViewControllerThatGetsHidden >= 0) {
-        UIViewController *viewControllerThatGetsHidden = [navigationController.viewControllers objectAtIndex:indexOfViewControllerThatGetsHidden];
-        if (viewController.hidesBottomBarWhenPushed && !viewControllerThatGetsHidden.hidesBottomBarWhenPushed) {
-            // add image of tabBar to the viewController's view to get a nice animation
-
-            UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
-            
-            tabBarImageRepresentation.frame = CGRectMake(0.f,viewControllerThatGetsHidden.view.frame.origin.y + viewControllerThatGetsHidden.view.frame.size.height - tabBarImageRepresentation.frame.size.height,
-                                         tabBarImageRepresentation.frame.size.width,tabBarImageRepresentation.frame.size.height);
-
-            objc_setAssociatedObject(viewControllerThatGetsHidden, &tabBarImageViewKey, tabBarImageRepresentation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-            [viewControllerThatGetsHidden.view addSubview:tabBarImageRepresentation];
-            [self setTabBarHidden:YES animated:NO];
-        }
+    
+    if (viewController.hidesBottomBarWhenPushed) {
+        [self setTabBarHidden:YES animated:YES];
     }
+    
+    // add image of tabBar to the viewController's view to get a nice animation when hidesBottomBarWhenPushed property changed
+    UIViewController *currentViewController = navigationController.topViewController;
+    NSUInteger indexOfNextViewController = [navigationController.viewControllers indexOfObject:viewController];
+    NSUInteger indexOfCurrentViewController = [navigationController.viewControllers indexOfObject:currentViewController];
+    BOOL isPush = indexOfNextViewController > indexOfCurrentViewController; //don't add image when popping in navigationController
+    if (isPush && viewController.hidesBottomBarWhenPushed && !currentViewController.hidesBottomBarWhenPushed ) {
+        UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
+        
+        tabBarImageRepresentation.frame = CGRectMake(0.f,currentViewController.view.frame.origin.y + currentViewController.view.frame.size.height - tabBarImageRepresentation.frame.size.height,
+                                                     tabBarImageRepresentation.frame.size.width,tabBarImageRepresentation.frame.size.height);
+        
+        objc_setAssociatedObject(currentViewController, &tabBarImageViewKey, tabBarImageRepresentation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        [currentViewController.view addSubview:tabBarImageRepresentation];
+    }
+    
 }
 
 - (void)navigationController:(UINavigationController *)navigationController didShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
@@ -393,15 +396,14 @@ static char tabBarImageViewKey;
     }
     
     if (!viewController.hidesBottomBarWhenPushed) {
-        [self setTabBarHidden:NO animated:NO];
-
+        [self setTabBarHidden:NO animated:YES];
+        
         // Remove temporary tabBar image
         UIView *view = objc_getAssociatedObject(viewController, &tabBarImageViewKey);
         [view removeFromSuperview];
         objc_setAssociatedObject(viewController, &tabBarImageViewKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 }
-
 ////////////////////////////////////////////////////////////////////////
 #pragma mark - Private
 ////////////////////////////////////////////////////////////////////////
