@@ -366,14 +366,13 @@ static char tabBarImageViewKey;
     if (![navigationController.ng_originalNavigationControllerDelegate isKindOfClass:[self class]]) {
         [navigationController.ng_originalNavigationControllerDelegate navigationController:navigationController willShowViewController:viewController animated:animated];
     }
-    
-    if (viewController.hidesBottomBarWhenPushed) {
-        NSUInteger indexOfViewControllerToPush = [navigationController.viewControllers indexOfObject:viewController];
-        NSInteger indexOfViewControllerThatGetsHidden = indexOfViewControllerToPush - 1;
-        
-        if (indexOfViewControllerThatGetsHidden >= 0) {
+    NSUInteger indexOfViewControllerToPush = [navigationController.viewControllers indexOfObject:viewController];
+    NSInteger indexOfViewControllerThatGetsHidden = indexOfViewControllerToPush - 1;
+    if (indexOfViewControllerThatGetsHidden >= 0) {
+        UIViewController *viewControllerThatGetsHidden = [navigationController.viewControllers objectAtIndex:indexOfViewControllerThatGetsHidden];
+        if (viewController.hidesBottomBarWhenPushed && !viewControllerThatGetsHidden.hidesBottomBarWhenPushed) {
             // add image of tabBar to the viewController's view to get a nice animation
-            UIViewController *viewControllerThatGetsHidden = [navigationController.viewControllers objectAtIndex:indexOfViewControllerThatGetsHidden];
+
             UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
             
             tabBarImageRepresentation.frame = CGRectMake(0.f,viewControllerThatGetsHidden.view.frame.origin.y + viewControllerThatGetsHidden.view.frame.size.height - tabBarImageRepresentation.frame.size.height,
