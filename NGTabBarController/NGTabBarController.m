@@ -660,6 +660,10 @@ static char tabBarImageViewKey;
 
 - (void)handleItemPressed:(id)sender {
     NSInteger index = [self.tabBarItems indexOfObject:sender];
+    [self selectTabAtIndex:index];
+}
+
+- (void)selectTabAtIndex:(NSInteger)index{
     BOOL shouldSelect = [self delegatedDecisionIfWeShouldSelectViewController:[self.viewControllers objectAtIndex:index] atIndex:index];
     
     if (shouldSelect) {

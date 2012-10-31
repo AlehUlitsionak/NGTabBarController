@@ -47,5 +47,5 @@
 - (id)initWithDelegate:(id<NGTabBarControllerDelegate>)delegate;
 
 - (void)setTabBarHidden:(BOOL)tabBarHidden animated:(BOOL)animated;
-
+- (void)selectTabAtIndex:(NSInteger)index;
 @end
