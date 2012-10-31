@@ -67,15 +67,18 @@ static char tabBarImageViewKey;
 ////////////////////////////////////////////////////////////////////////
 #pragma mark - Lifecycle
 ////////////////////////////////////////////////////////////////////////
+- (void)configTabBar{
+    _selectedIndex = NSNotFound;
+    _oldSelectedIndex = NSNotFound;
+    _animation = NGTabBarControllerAnimationNone;
+    _animationDuration = kNGDefaultAnimationDuration;
+    _animationActive = NO;
+    _tabBarPosition = kNGTabBarPositionDefault;
+}
 
 - (id)initWithDelegate:(id<NGTabBarControllerDelegate>)delegate {
     if ((self = [super initWithNibName:nil bundle:nil])) {
-        _selectedIndex = NSNotFound;
-        _oldSelectedIndex = NSNotFound;
-        _animation = NGTabBarControllerAnimationNone;
-        _animationDuration = kNGDefaultAnimationDuration;
-        _animationActive = NO;
-        _tabBarPosition = kNGTabBarPositionDefault;
+        [self configTabBar];
         
         // need to call setter here
         self.delegate = delegate;
@@ -86,6 +89,13 @@ static char tabBarImageViewKey;
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
     return [self init];
+}
+
+- (id)initWithCoder:(NSCoder *)aDecoder{
+    if ((self = [super initWithNibName:nil bundle:nil])) {
+        [self configTabBar];
+    }
+    return self;
 }
 
 ////////////////////////////////////////////////////////////////////////
