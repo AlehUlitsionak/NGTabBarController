@@ -48,4 +48,6 @@
 
 - (void)setTabBarHidden:(BOOL)tabBarHidden animated:(BOOL)animated;
 - (void)selectTabAtIndex:(NSInteger)index;
+- (void)configTabBar;
+
 @end
