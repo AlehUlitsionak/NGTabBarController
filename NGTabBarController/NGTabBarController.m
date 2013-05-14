@@ -377,10 +377,6 @@ static char tabBarImageViewKey;
         [navigationController.ng_originalNavigationControllerDelegate navigationController:navigationController willShowViewController:viewController animated:animated];
     }
     
-    if (viewController.hidesBottomBarWhenPushed) {
-        [self setTabBarHidden:YES animated:YES];
-    }
-    
     // add image of tabBar to the viewController's view to get a nice animation when hidesBottomBarWhenPushed property changed
     UIViewController *currentViewController = navigationController.topViewController;
     NSUInteger indexOfNextViewController = [navigationController.viewControllers indexOfObject:viewController];
@@ -405,8 +401,8 @@ static char tabBarImageViewKey;
         [navigationController.ng_originalNavigationControllerDelegate navigationController:navigationController willShowViewController:viewController animated:animated];
     }
     
+    [self setTabBarHidden:viewController.hidesBottomBarWhenPushed && _tabBar.position != NGTabBarPositionLeft animated:YES];
     if (!viewController.hidesBottomBarWhenPushed) {
-        [self setTabBarHidden:NO animated:YES];
         
         // Remove temporary tabBar image
         UIView *view = objc_getAssociatedObject(viewController, &tabBarImageViewKey);
