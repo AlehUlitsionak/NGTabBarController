@@ -1,6 +1,8 @@
 #import "NGTabBarController.h"
 #import "UINavigationController+NGTabBarNavigationDelegate.h"
+#import "UIViewController+HidesTabBar.h"
 #import <objc/runtime.h>
+#import <CoreGraphics/CoreGraphics.h>
 
 
 // the default width of the tabBar
@@ -348,7 +350,8 @@ static char tabBarImageViewKey;
         
         if (animated) {
             _animationActive = YES;
-            [UIView animateWithDuration:kNGDefaultAnimationDuration
+            
+            [UIView animateWithDuration:kNGDefaultAnimationDuration delay:0 options:UIViewAnimationOptionLayoutSubviews
                              animations:^{
                                  self.selectedViewController.view.frame = self.childViewControllerFrame;
                              } completion:^(BOOL finished) {
@@ -356,7 +359,6 @@ static char tabBarImageViewKey;
                                  [self layout];
                              }];
         } else {
-            self.selectedViewController.view.frame = self.childViewControllerFrame;
             [self layout];
         }
     }
@@ -378,20 +380,29 @@ static char tabBarImageViewKey;
     }
     
     // add image of tabBar to the viewController's view to get a nice animation when hidesBottomBarWhenPushed property changed
-    UIViewController *currentViewController = navigationController.topViewController;
+    NSInteger indexOfCurrentViewController = [navigationController.viewControllers count]-2;
+    indexOfCurrentViewController = indexOfCurrentViewController < 0 ? 0 : indexOfCurrentViewController;
+    UIViewController *currentViewController = [navigationController.viewControllers objectAtIndex:indexOfCurrentViewController];
     NSUInteger indexOfNextViewController = [navigationController.viewControllers indexOfObject:viewController];
-    NSUInteger indexOfCurrentViewController = [navigationController.viewControllers indexOfObject:currentViewController];
     BOOL isPush = indexOfNextViewController > indexOfCurrentViewController; //don't add image when popping in navigationController
     if (isPush && viewController.hidesBottomBarWhenPushed && !currentViewController.hidesBottomBarWhenPushed ) {
-        UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
         
-        tabBarImageRepresentation.frame = CGRectMake(0.f,currentViewController.view.frame.origin.y + currentViewController.view.frame.size.height - tabBarImageRepresentation.frame.size.height,
-                                                     tabBarImageRepresentation.frame.size.width,tabBarImageRepresentation.frame.size.height);
+        if (_tabBar.position != NGTabBarPositionLeft) {
+            if (objc_getAssociatedObject(currentViewController, &tabBarImageViewKey) == nil) {
+                UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
+                
+                CGFloat height = tabBarImageRepresentation.frame.size.height;
+                tabBarImageRepresentation.frame = CGRectMake(0.f,currentViewController.view.frame.origin.y + currentViewController.view.frame.size.height - height,
+                                                             tabBarImageRepresentation.frame.size.width, height);
+                
+                objc_setAssociatedObject(currentViewController, &tabBarImageViewKey, tabBarImageRepresentation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+                [currentViewController.view addSubview:tabBarImageRepresentation];
+            }
+        }
         
-        objc_setAssociatedObject(currentViewController, &tabBarImageViewKey, tabBarImageRepresentation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        [currentViewController.view addSubview:tabBarImageRepresentation];
+        [self setTabBarHidden:viewController.hidesBottomBarWhenPushed animated:NO];
+        
     }
-    
 }
 
 - (void)navigationController:(UINavigationController *)navigationController didShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
@@ -401,14 +412,17 @@ static char tabBarImageViewKey;
         [navigationController.ng_originalNavigationControllerDelegate navigationController:navigationController willShowViewController:viewController animated:animated];
     }
     
-    [self setTabBarHidden:viewController.hidesBottomBarWhenPushed && _tabBar.position != NGTabBarPositionLeft animated:YES];
     if (!viewController.hidesBottomBarWhenPushed) {
+        [self setTabBarHidden:viewController.hidesBottomBarWhenPushed animated:YES];
+        NSInteger indexOfCurrentViewController = [navigationController.viewControllers count]-2;
+        indexOfCurrentViewController = indexOfCurrentViewController < 0 ? 0 : indexOfCurrentViewController;
+        UIViewController *currentViewController = [navigationController.viewControllers objectAtIndex:indexOfCurrentViewController];
         
-        // Remove temporary tabBar image
-        UIView *view = objc_getAssociatedObject(viewController, &tabBarImageViewKey);
+        UIView *view = objc_getAssociatedObject(currentViewController, &tabBarImageViewKey);
         [view removeFromSuperview];
         objc_setAssociatedObject(viewController, &tabBarImageViewKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
+    
 }
 ////////////////////////////////////////////////////////////////////////
 #pragma mark - Private
@@ -423,7 +437,7 @@ static char tabBarImageViewKey;
         if (self.oldSelectedIndex != NSNotFound) {
             UIViewController *oldSelectedViewController = [self.viewControllers objectAtIndex:self.oldSelectedIndex];
             
-            if (self.containmentAPISupported) { 
+            if (self.containmentAPISupported) {
                 // custom move animation
                 if (self.animation == NGTabBarControllerAnimationMove ||
                     self.animation == NGTabBarControllerAnimationMoveAndScale) {
@@ -546,6 +560,17 @@ static char tabBarImageViewKey;
     [self setupTabBarForPosition:self.tabBarPosition];
 }
 
+- (void)layoutExcept:(UIViewController* )excludedController {
+    CGRect childViewControllerFrame = self.childViewControllerFrame;
+    
+    for (UIViewController *viewController in ((UINavigationController*) self.selectedViewController).viewControllers) {
+        if (viewController != excludedController) {
+            viewController.view.frame = childViewControllerFrame;
+        }
+    }
+    
+}
+
 - (CGRect)childViewControllerFrame {
     CGRect bounds = self.view.bounds;
     UIEdgeInsets edgeInsets = UIEdgeInsetsZero;
@@ -585,7 +610,7 @@ static char tabBarImageViewKey;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         containmentAPISupported = ([self respondsToSelector:@selector(willMoveToParentViewController:)] &&
-                                   [self respondsToSelector:@selector(didMoveToParentViewController:)] && 
+                                   [self respondsToSelector:@selector(didMoveToParentViewController:)] &&
                                    [self respondsToSelector:@selector(transitionFromViewController:toViewController:duration:options:animations:completion:)]);
     });
     
@@ -595,7 +620,7 @@ static char tabBarImageViewKey;
 - (UIViewAnimationOptions)currentActiveAnimationOptions {
     UIViewAnimationOptions animationOptions = UIViewAnimationOptionTransitionNone;
     
-    switch (self.animation) {    
+    switch (self.animation) {
         case NGTabBarControllerAnimationFade:
             animationOptions = UIViewAnimationOptionTransitionCrossDissolve;
             break;
