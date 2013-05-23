@@ -392,8 +392,7 @@ static char tabBarImageViewKey;
                 UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
                 
                 CGFloat height = tabBarImageRepresentation.frame.size.height;
-                tabBarImageRepresentation.frame = CGRectMake(0.f,currentViewController.view.frame.origin.y + currentViewController.view.frame.size.height - height,
-                                                             tabBarImageRepresentation.frame.size.width, height);
+                tabBarImageRepresentation.frame = CGRectMake(0.f,[UIScreen mainScreen].applicationFrame.size.height - 44.0 - height, tabBarImageRepresentation.frame.size.width, height);
                 
                 objc_setAssociatedObject(currentViewController, &tabBarImageViewKey, tabBarImageRepresentation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
                 [currentViewController.view addSubview:tabBarImageRepresentation];
