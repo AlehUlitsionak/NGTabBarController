@@ -389,10 +389,15 @@ static char tabBarImageViewKey;
         
         if (_tabBar.position != NGTabBarPositionLeft) {
             if (objc_getAssociatedObject(currentViewController, &tabBarImageViewKey) == nil) {
-                UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
                 
-                CGFloat height = tabBarImageRepresentation.frame.size.height;
-                tabBarImageRepresentation.frame = CGRectMake(0.f,[UIScreen mainScreen].applicationFrame.size.height - 44.0 - height, tabBarImageRepresentation.frame.size.width, height);
+                UIImageView *tabBarImageRepresentation = [self.tabBar imageViewRepresentation];
+                if ([currentViewController respondsToSelector:@selector(imageRepresentation)]) {
+                    UIImage* controllerImage = [currentViewController performSelector:@selector(imageRepresentation)];
+                    tabBarImageRepresentation.bounds = CGRectMake(0, 0, controllerImage.size.width, controllerImage.size.height + tabBarImageRepresentation.bounds.size.height);
+                    tabBarImageRepresentation.contentMode = UIViewContentModeBottom;
+                    [tabBarImageRepresentation addSubview:[[UIImageView alloc] initWithImage:controllerImage]];
+                    tabBarImageRepresentation.frame = CGRectMake(0.f, 0.f, tabBarImageRepresentation.frame.size.width, tabBarImageRepresentation.frame.size.height);
+                }
                 
                 objc_setAssociatedObject(currentViewController, &tabBarImageViewKey, tabBarImageRepresentation, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
                 [currentViewController.view addSubview:tabBarImageRepresentation];
@@ -401,6 +406,11 @@ static char tabBarImageViewKey;
         
         [self setTabBarHidden:viewController.hidesBottomBarWhenPushed animated:NO];
         
+    }
+    else if (_tabBar.position == NGTabBarPositionLeft && !isPush) {
+        UIView *view = objc_getAssociatedObject(currentViewController, &tabBarImageViewKey);
+        [view removeFromSuperview];
+        objc_setAssociatedObject(viewController, &tabBarImageViewKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     }
 }
 
